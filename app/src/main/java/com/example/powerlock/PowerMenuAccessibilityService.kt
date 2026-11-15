@@ -20,8 +20,7 @@ class PowerMenuAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        windowManager =
-            getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -96,8 +95,8 @@ class PowerMenuAccessibilityService : AccessibilityService() {
             textSize = 18f
 
             setOnClickListener {
-                val keyguard =
-                    getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+                val keyguard = getSystemService(KEYGUARD_SERVICE)
+                    as KeyguardManager
 
                 val phoneIsLocked = keyguard.isKeyguardLocked
 
