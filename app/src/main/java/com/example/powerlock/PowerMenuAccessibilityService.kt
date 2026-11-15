@@ -2,6 +2,7 @@
 package com.example.powerlock
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.view.Gravity
@@ -51,9 +52,7 @@ class PowerMenuAccessibilityService : AccessibilityService() {
             "পুনরায় চালু"
         )
 
-        val isPowerMenu = powerWords.any { text.contains(it) }
-
-        if (isSystemUI && isPowerMenu) {
+        if (isSystemUI && powerWords.any { text.contains(it) }) {
             showLockScreen()
         }
     }
@@ -96,8 +95,20 @@ class PowerMenuAccessibilityService : AccessibilityService() {
             textSize = 18f
 
             setOnClickListener {
+                val keyguard = getSystemService(KEYGUARD_SERVICE)
+                    as KeyguardManager
+
+                val phoneIsLocked = keyguard.isKeyguardLocked
+
                 removeLockScreen()
-                performGlobalAction(GLOBAL_ACTION_HOME)
+
+                if (phoneIsLocked) {
+                    // Locked phone: return to the previous lock screen
+                    performGlobalAction(GLOBAL_ACTION_BACK)
+                } else {
+                    // Unlocked phone: go directly to Home Screen
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                }
             }
         }
 
