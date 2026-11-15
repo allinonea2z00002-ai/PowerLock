@@ -1,6 +1,0 @@
-
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">PowerLock</string>
-    <string name="accessibility_description">PowerLock detects possible system power menu events and displays a safety reminder overlay.</string>
-</resources>
