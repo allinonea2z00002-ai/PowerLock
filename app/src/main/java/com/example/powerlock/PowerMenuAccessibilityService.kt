@@ -103,10 +103,8 @@ class PowerMenuAccessibilityService : AccessibilityService() {
                 removeLockScreen()
 
                 if (phoneIsLocked) {
-                    // Locked phone: return to the previous lock screen
-                    performGlobalAction(GLOBAL_ACTION_BACK)
+                    performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
                 } else {
-                    // Unlocked phone: go directly to Home Screen
                     performGlobalAction(GLOBAL_ACTION_HOME)
                 }
             }
