@@ -1,30 +1,30 @@
+
 package com.example.powerlock
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
+import android.graphics.Color
 import android.graphics.PixelFormat
-import android.os.Build
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 
 class PowerMenuAccessibilityService : AccessibilityService() {
 
     private var windowManager: WindowManager? = null
-    private var reminderView: LinearLayout? = null
+    private var lockView: FrameLayout? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-
-        windowManager =
-            getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-
-        if (event == null) return
+        if (event == null || lockView != null) return
 
         val packageName = event.packageName?.toString().orEmpty()
 
@@ -36,10 +36,10 @@ class PowerMenuAccessibilityService : AccessibilityService() {
             append(event.className ?: "")
         }.lowercase()
 
-        val systemUiEvent =
+        val isSystemUI =
             packageName.contains("systemui", ignoreCase = true)
 
-        val powerClue = listOf(
+        val powerWords = listOf(
             "power off",
             "power menu",
             "shutdown",
@@ -50,99 +50,121 @@ class PowerMenuAccessibilityService : AccessibilityService() {
             "sos",
             "বন্ধ করুন",
             "পুনরায় চালু"
-        ).any {
-            text.contains(it)
-        }
+        )
 
-        if (systemUiEvent && powerClue) {
-            showReminder()
+        if (isSystemUI && powerWords.any { text.contains(it) }) {
+            showLockScreen()
         }
     }
 
-    override fun onInterrupt() {
-        removeReminder()
-    }
-
-    private fun showReminder() {
-
-        if (reminderView != null) return
+    private fun showLockScreen() {
+        if (lockView != null) return
 
         val wm = windowManager ?: return
 
-        val panel = LinearLayout(this).apply {
+        val root = FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener { _, _ -> true }
+        }
+
+        val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(28, 28, 28, 28)
-            setBackgroundColor(0xEE202124.toInt())
+            setPadding(30, 30, 30, 30)
+        }
+
+        val title = TextView(this).apply {
+            text = "POWERLOCK"
+            textSize = 30f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
         }
 
         val message = TextView(this).apply {
-            text = "একটু থামুন!\nআপনি কি সত্যিই ফোন বন্ধ করতে চান?"
-            textSize = 21f
-            setTextColor(0xFFFFFFFF.toInt())
+            text = "ফোন বন্ধ করা থেকে ফিরে আসুন"
+            textSize = 18f
+            setTextColor(Color.LTGRAY)
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 20)
+            setPadding(0, 25, 0, 35)
         }
 
         val backButton = Button(this).apply {
-            text = "ফিরে যান"
+            text = "← BACK"
+            textSize = 18f
+
             setOnClickListener {
-                removeReminder()
+                val keyguard = getSystemService(KEYGUARD_SERVICE)
+                    as KeyguardManager
+
+                val phoneIsLocked = keyguard.isKeyguardLocked
+
+                removeLockScreen()
+
+                if (phoneIsLocked) {
+                    performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+                } else {
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                }
             }
         }
 
-        val sosButton = Button(this).apply {
-            text = "SOS / বন্ধ করুন"
-            setOnClickListener {
-                removeReminder()
-            }
-        }
+        content.addView(title)
+        content.addView(message)
 
-        panel.addView(message)
-        panel.addView(backButton)
-        panel.addView(sosButton)
+        content.addView(
+            backButton,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
 
-        val overlayType =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.TYPE_PHONE
-            }
+        root.addView(
+            content,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER
+            )
+        )
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            overlayType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.OPAQUE
         ).apply {
-            gravity = Gravity.CENTER
+            gravity = Gravity.TOP or Gravity.START
         }
 
         try {
-            wm.addView(panel, params)
-            reminderView = panel
+            wm.addView(root, params)
+            lockView = root
         } catch (_: Exception) {
-            reminderView = null
+            lockView = null
         }
     }
 
-    private fun removeReminder() {
-
-        val view = reminderView ?: return
+    private fun removeLockScreen() {
+        val view = lockView ?: return
 
         try {
             windowManager?.removeView(view)
         } catch (_: Exception) {
-        } finally {
-            reminderView = null
         }
+
+        lockView = null
+    }
+
+    override fun onInterrupt() {
+        removeLockScreen()
     }
 
     override fun onDestroy() {
-        removeReminder()
+        removeLockScreen()
         super.onDestroy()
     }
 }
