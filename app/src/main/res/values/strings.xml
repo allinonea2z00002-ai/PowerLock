@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">PowerLock</string>
+
+    <string name="accessibility_service_name">
+        PowerLock Service
+    </string>
+
+    <string name="accessibility_description">
+        Detects possible power menu screens and shows a reminder overlay.
+    </string>
+
+</resources>
