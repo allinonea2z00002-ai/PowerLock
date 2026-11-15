@@ -6,8 +6,6 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.view.Gravity
-import android.view.MotionEvent
-import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Button
@@ -22,8 +20,7 @@ class PowerMenuAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        windowManager =
-            getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -71,8 +68,6 @@ class PowerMenuAccessibilityService : AccessibilityService() {
             setBackgroundColor(Color.BLACK)
             isClickable = true
             isFocusable = true
-
-            // Consume touches outside the BACK button.
             setOnTouchListener { _, _ -> true }
         }
 
@@ -100,26 +95,15 @@ class PowerMenuAccessibilityService : AccessibilityService() {
         val backButton = Button(this).apply {
             text = "← BACK"
             textSize = 18f
+
             setOnClickListener {
                 removeLockScreen()
+                performGlobalAction(GLOBAL_ACTION_HOME)
             }
         }
 
-        content.addView(
-            title,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-
-        content.addView(
-            message,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
+        content.addView(title)
+        content.addView(message)
 
         content.addView(
             backButton,
